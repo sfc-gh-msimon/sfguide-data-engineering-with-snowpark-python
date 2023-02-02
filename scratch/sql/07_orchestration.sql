@@ -1,51 +1,56 @@
 /*-----------------------------------------------------------------------------
 Hands-On Lab: Data Engineering with Snowpark
-Script:       09_process_incrementally.sql
+Script:       07_orchestration.sql
 Author:       Jeremiah Hansen
-Last Updated: 1/9/2023
+Last Updated: 1/4/2023
 -----------------------------------------------------------------------------*/
 
-USE ROLE RETAIL;
+USE ROLE HOL_ROLE;
 USE WAREHOUSE HOL_WH;
-USE DATABASE RETAIL;
+USE SCHEMA HOL_DB.HARMONIZED;
 
 
 -- ----------------------------------------------------------------------------
--- Step #1: Add new/remaining order data
+-- Step #1: Create the tasks to call our Python stored procedures
 -- ----------------------------------------------------------------------------
 
-USE SCHEMA RAW_POS;
+CREATE OR REPLACE TASK ORDERS_UPDATE_TASK
+WAREHOUSE = HOL_WH
+WHEN
+  SYSTEM$STREAM_HAS_DATA('ORDERS_V_STREAM')
+AS
+CALL ORDERS_UPDATE_SP();
 
-ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE;
-COPY INTO ORDER_HEADER
-FROM @external.frostbyte_raw_stage/pos/order_header/year=2022
-FILE_FORMAT = (FORMAT_NAME = EXTERNAL.PARQUET_FORMAT)
-MATCH_BY_COLUMN_NAME = CASE_SENSITIVE;
+CREATE OR REPLACE TASK DAILY_CITY_METRICS_UPDATE_TASK
+WAREHOUSE = HOL_WH
+AFTER ORDERS_UPDATE_TASK
+WHEN
+  SYSTEM$STREAM_HAS_DATA('ORDERS_STREAM')
+AS
+CALL DAILY_CITY_METRICS_UPDATE_SP();
 
-COPY INTO ORDER_DETAIL
-FROM @external.frostbyte_raw_stage/pos/order_detail/year=2022
-FILE_FORMAT = (FORMAT_NAME = EXTERNAL.PARQUET_FORMAT)
-MATCH_BY_COLUMN_NAME = CASE_SENSITIVE;
-
-ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XSMALL;
-
--- See how many new records are in the stream
-SELECT COUNT(*) FROM HARMONIZED.POS_FLATTENED_V_STREAM;
 
 -- ----------------------------------------------------------------------------
 -- Step #2: Execute the tasks
 -- ----------------------------------------------------------------------------
 
-USE SCHEMA HARMONIZED;
+ALTER TASK DAILY_CITY_METRICS_UPDATE_TASK RESUME;
 EXECUTE TASK ORDERS_UPDATE_TASK;
 
 
 -- ----------------------------------------------------------------------------
 -- Step #3: Monitor tasks in Snowsight
 -- ----------------------------------------------------------------------------
+
+/*---
+-- TODO: Add Snowsight details here
 -- https://docs.snowflake.com/en/user-guide/ui-snowsight-tasks.html
 
--- manual queries to get at the same details
+-- Remove the filter on "User" and under "Filters" toggle the "Queries executed by user tasks"
+
+
+
+-- Alternatively, here are some manual queries to get at the same details
 SHOW TASKS;
 
 -- Task execution history in the past day
@@ -53,7 +58,8 @@ SELECT *
 FROM TABLE(INFORMATION_SCHEMA.TASK_HISTORY(
     SCHEDULED_TIME_RANGE_START=>DATEADD('DAY',-1,CURRENT_TIMESTAMP()),
     RESULT_LIMIT => 100))
-ORDER BY SCHEDULED_TIME DESC;
+ORDER BY SCHEDULED_TIME DESC
+;
 
 -- Query history in the past hour
 SELECT *
@@ -80,3 +86,4 @@ SELECT *
 SELECT *
   FROM TABLE(INFORMATION_SCHEMA.COMPLETE_TASK_GRAPHS())
   ORDER BY SCHEDULED_TIME;
+---*/

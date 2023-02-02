@@ -31,15 +31,13 @@ def load_raw_table(session, tname=None, s3dir=None, year=None, schema=None):
         location = "@external.frostbyte_raw_stage/{}/{}/year={}".format(s3dir, tname, year)
     
     # we can infer schema using the parquet read option
-    df = session.read.option("compression", "snappy") \
-                            .parquet(location)
+    df = session.read.option("compression", "snappy").parquet(location)
     df.copy_into_table("{}".format(tname))
 
 # SNOWFLAKE ADVANTAGE: Warehouse elasticity (dynamic scaling)
 
 def load_all_raw_tables(session):
-    _ = session.sql("ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE").collect()
-    time.sleep(5)
+    _ = session.sql("ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE wait_for_completion=true").collect()
 
     for s3dir, data in TABLE_DICT.items():
         tnames = data['tables']
@@ -77,6 +75,6 @@ if __name__ == "__main__":
     session = snowpark_utils.get_snowpark_session()
 
     load_all_raw_tables(session)
-#    validate_raw_tables(session)
+    validate_raw_tables(session)
 
     session.close()

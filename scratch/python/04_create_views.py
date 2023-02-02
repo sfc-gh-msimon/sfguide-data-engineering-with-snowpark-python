@@ -1,21 +1,10 @@
-#------------------------------------------------------------------------------
-# Hands-On Lab: Data Engineering with Snowpark
-# Script:       04_create_order_view.py
-# Author:       Jeremiah Hansen, Caleb Baechtold
-# Last Updated: 1/9/2023
-#------------------------------------------------------------------------------
-
-# SNOWFLAKE ADVANTAGE: Snowpark DataFrame API
-# SNOWFLAKE ADVANTAGE: Streams for incremental processing (CDC)
-# SNOWFLAKE ADVANTAGE: Streams on views
-
-
 from snowflake.snowpark import Session
-#import snowflake.snowpark.types as T
+import snowflake.snowpark.types as T
 import snowflake.snowpark.functions as F
 
+import json
 
-def create_pos_view(session):
+def create_orders_view(session):
     session.use_schema('HARMONIZED')
     order_detail = session.table("RAW_POS.ORDER_DETAIL").select(F.col("ORDER_DETAIL_ID"), \
                                                                 F.col("LINE_NUMBER"), \
@@ -90,25 +79,35 @@ def create_pos_view(session):
                             F.col("ORDER_TAX_AMOUNT"), \
                             F.col("ORDER_DISCOUNT_AMOUNT"), \
                             F.col("ORDER_TOTAL"))
-    final_df.create_or_replace_view('POS_FLATTENED_V')
+    final_df.create_or_replace_view('ORDERS_V')
 
-def create_pos_view_stream(session):
+def create_orders_view_stream(session):
+    _ = session.sql('CREATE OR REPLACE STREAM ORDERS_V_STREAM \
+                        ON VIEW ORDERS_V \
+                        SHOW_INITIAL_ROWS = TRUE').collect()
+
+def test_view(session):
+    tv = session.table('ORDERS_V')
+    tv.limit(5).show()
+
+
+def main():
+    with open('creds.json') as f:
+        connection_params = json.load(f)
+
+    try:
+        session.close()
+    except:
+        pass
+
+    session = Session.builder.configs(connection_params).create()
+
+    session.use_database("HOL_DB")
+    session.use_warehouse("HOL_WH")
     session.use_schema('HARMONIZED')
-    _ = session.sql('CREATE OR REPLACE STREAM POS_FLATTENED_V_STREAM ON VIEW POS_FLATTENED_V SHOW_INITIAL_ROWS = TRUE').collect()
 
-
+    create_orders_view(session)
+    create_orders_view_stream(session)
 
 if __name__ == "__main__":
-    # Add the utils package to our path and import the snowpark_utils function
-    import os, sys
-    current_dir = os.getcwd()
-    parent_dir = os.path.dirname(current_dir)
-    sys.path.append(parent_dir)
-
-    from utils import snowpark_utils
-    session = snowpark_utils.get_snowpark_session()
-
-    create_pos_view(session)
-    create_pos_view_stream(session)
-
-    session.close()
+    main()

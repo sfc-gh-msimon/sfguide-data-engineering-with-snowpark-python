@@ -1,5 +1,5 @@
 snowsql_config_path = "~/.snowsql/config"
-snowsql_connection_name = "dev"
+snowsql_connection_name = "retail"
 
 [default]
 input_parameters = "(temp_f float)"
@@ -10,8 +10,8 @@ handler = "app.main"
 execute_as_caller = true
 
 [dev]
-database = "HOL_DB"
+database = "RETAIL"
 schema = "ANALYTICS"
 warehouse = "HOL_WH"
-role = "HOL_ROLE"
+role = "RETAIL"
 overwrite = true

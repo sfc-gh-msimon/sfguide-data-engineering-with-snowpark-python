@@ -1,4 +1,4 @@
-name: pysnowpark
+name: retail
 channels:
   - https://repo.anaconda.com/pkgs/snowflake
   - nodefaults

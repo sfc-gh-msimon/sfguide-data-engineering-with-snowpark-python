@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
 Hands-On Lab: Data Engineering with Snowpark
-Script:       01_setup_snowflake.sql
+Script:       01_setup.sql
 Author:       Jeremiah Hansen
 Last Updated: 1/1/2023
 -----------------------------------------------------------------------------*/
@@ -12,6 +12,7 @@ Last Updated: 1/1/2023
 
 -- See Getting Started section in Third-Party Packages (https://docs.snowflake.com/en/developer-guide/udf/python/udf-python-packages.html#getting-started)
 
+
 -- ----------------------------------------------------------------------------
 -- Step #2: Create the account level objects
 -- ----------------------------------------------------------------------------
@@ -19,27 +20,29 @@ USE ROLE ACCOUNTADMIN;
 
 -- Roles
 SET MY_USER = CURRENT_USER();
-CREATE ROLE IF NOT EXISTS RETAIL;
-GRANT ROLE RETAIL TO ROLE SYSADMIN;
-GRANT ROLE RETAIL TO USER IDENTIFIER($MY_USER);
+CREATE OR REPLACE ROLE HOL_ROLE;
+GRANT ROLE HOL_ROLE TO ROLE SYSADMIN;
+GRANT ROLE HOL_ROLE TO USER IDENTIFIER($MY_USER);
 
-GRANT EXECUTE TASK ON ACCOUNT TO ROLE RETAIL;
-GRANT MONITOR EXECUTION ON ACCOUNT TO ROLE RETAIL;
-GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE RETAIL;
+GRANT EXECUTE TASK ON ACCOUNT TO ROLE HOL_ROLE;
+GRANT MONITOR EXECUTION ON ACCOUNT TO ROLE HOL_ROLE;
+GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE HOL_ROLE;
 
 -- Databases
-CREATE DATABASE IF NOT EXISTS RETAIL;
-GRANT OWNERSHIP ON DATABASE RETAIL TO ROLE RETAIL;
+CREATE OR REPLACE DATABASE HOL_DB;
+GRANT OWNERSHIP ON DATABASE HOL_DB TO ROLE HOL_ROLE;
 
 -- Warehouses
-CREATE WAREHOUSE IF NOT EXISTS HOL_WH WAREHOUSE_SIZE = XSMALL, AUTO_SUSPEND = 5, AUTO_RESUME= TRUE;
+CREATE OR REPLACE WAREHOUSE HOL_WH WAREHOUSE_SIZE = XSMALL, AUTO_SUSPEND = 5, AUTO_RESUME= TRUE;
+GRANT OWNERSHIP ON WAREHOUSE HOL_WH TO ROLE HOL_ROLE;
+
 
 -- ----------------------------------------------------------------------------
 -- Step #3: Create the database level objects
 -- ----------------------------------------------------------------------------
-USE ROLE RETAIL;
+USE ROLE HOL_ROLE;
 USE WAREHOUSE HOL_WH;
-USE DATABASE RETAIL;
+USE DATABASE HOL_DB;
 
 -- Schemas
 CREATE OR REPLACE SCHEMA EXTERNAL;
@@ -52,24 +55,9 @@ CREATE OR REPLACE SCHEMA ANALYTICS;
 USE SCHEMA EXTERNAL;
 CREATE OR REPLACE FILE FORMAT PARQUET_FORMAT
     TYPE = PARQUET
-    COMPRESSION = SNAPPY;
-
+    COMPRESSION = SNAPPY
+;
 CREATE OR REPLACE STAGE FROSTBYTE_RAW_STAGE
-    URL = 's3://sfquickstarts/data-engineering-with-snowpark-python/';
-
--- ANALYTICS objects
-USE SCHEMA ANALYTICS;
--- This will be added in step 5
---CREATE OR REPLACE FUNCTION ANALYTICS.FAHRENHEIT_TO_CELSIUS_UDF(TEMP_F NUMBER(35,4))
---RETURNS NUMBER(35,4)
---AS
---$$
---    (temp_f - 32) * (5/9)
---$$;
-
-CREATE OR REPLACE FUNCTION ANALYTICS.INCH_TO_MILLIMETER_UDF(INCH NUMBER(35,4))
-RETURNS NUMBER(35,4)
-    AS
-$$
-    inch * 25.4
-$$;
+    URL = 's3://path-to-public-s3-bucket'
+    CREDENTIALS = (AWS_KEY_ID = '*****' AWS_SECRET_KEY = '*****')
+;

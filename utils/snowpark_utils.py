@@ -21,8 +21,6 @@ def get_snowpark_session() -> Session:
         # Not sure what this does?
         session = SnowflakeConnection().connection
     # if running locally with a config file
-    # TODO: Look for a creds.json style file. This should be the way all snowpark
-    # related tools work IMO
     # if using snowsql config, like snowcli does
     elif os.path.exists(os.path.expanduser('~/.snowsql/config')):
         snowpark_config = get_snowsql_config()
@@ -51,7 +49,7 @@ def get_snowpark_session() -> Session:
 # TODO: It would be nice to get rid of this entirely and always use creds.json but
 # need to update snowcli to make that happen
 def get_snowsql_config(
-    connection_name: str = 'dev',
+    connection_name: str = 'retail',
     config_file_path: str = os.path.expanduser('~/.snowsql/config'),
 ) -> dict:
     import configparser

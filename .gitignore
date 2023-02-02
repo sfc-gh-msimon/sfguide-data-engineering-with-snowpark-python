@@ -2,6 +2,8 @@
 .DS_Store
 
 # Snowpark specific files
+app.zip
+requirements.snowflake.txt
 creds.json
 
 # Byte-compiled / optimized / DLL files

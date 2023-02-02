@@ -22,12 +22,10 @@ def create_orders_table(session):
     _ = session.sql("ALTER TABLE HARMONIZED.ORDERS ADD COLUMN META_UPDATED_AT TIMESTAMP").collect()
 
 def create_orders_stream(session):
-    _ = session.sql("CREATE STREAM IF NOT EXISTS HARMONIZED.ORDERS_STREAM ON TABLE HARMONIZED.ORDERS \
-                    SHOW_INITIAL_ROWS = TRUE;").collect()
+    _ = session.sql("CREATE STREAM IF NOT EXISTS HARMONIZED.ORDERS_STREAM ON TABLE HARMONIZED.ORDERS SHOW_INITIAL_ROWS = TRUE;").collect()
 
 def merge_order_updates(session):
-    _ = session.sql('ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE').collect()
-    time.sleep(5)
+    _ = session.sql('ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE wait_for_completion = true').collect()
 
     source = session.table('HARMONIZED.POS_FLATTENED_V_STREAM')
     target = session.table('HARMONIZED.ORDERS')
@@ -51,7 +49,6 @@ def main(session: Session) -> str:
 
     # Process data incrementally
     merge_order_updates(session)
-#    session.table('HARMONIZED.ORDERS').limit(5).show()
 
     return f"Successfully processed ORDERS"
 

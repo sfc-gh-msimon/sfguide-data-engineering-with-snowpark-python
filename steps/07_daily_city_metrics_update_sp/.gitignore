@@ -1,5 +1,4 @@
 .packages/
 .venv/
 app.zip
-requirements.snowflake.txt
 __pycache__
