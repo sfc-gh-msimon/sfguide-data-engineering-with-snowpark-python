@@ -8,9 +8,12 @@ Last Updated: 1/9/2023
 
 USE ROLE ACCOUNTADMIN;
 
-DROP DATABASE HOL_DB;
+DROP DATABASE RETAIL;
+-- alter database retail rename to retail_backup;
+
 DROP WAREHOUSE HOL_WH;
-DROP ROLE HOL_ROLE;
+
+DROP ROLE RETAIL;
 
 -- Drop the weather share
 DROP DATABASE FROSTBYTE_WEATHERSOURCE;

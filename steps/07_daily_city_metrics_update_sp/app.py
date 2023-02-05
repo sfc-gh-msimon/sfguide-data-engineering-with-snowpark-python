@@ -29,10 +29,9 @@ def create_daily_city_metrics_table(session):
     DAILY_CITY_METRICS_COLUMNS = [*SHARED_COLUMNS, T.StructField("META_UPDATED_AT", T.TimestampType())]
     DAILY_CITY_METRICS_SCHEMA = T.StructType(DAILY_CITY_METRICS_COLUMNS)
 
-    dcm = session.create_dataframe([[None]*len(DAILY_CITY_METRICS_SCHEMA.names)], schema=DAILY_CITY_METRICS_SCHEMA) \
+    session.create_dataframe([[None]*len(DAILY_CITY_METRICS_SCHEMA.names)], schema=DAILY_CITY_METRICS_SCHEMA) \
                         .na.drop() \
                         .write.mode('overwrite').save_as_table('ANALYTICS.DAILY_CITY_METRICS')
-    dcm = session.table('ANALYTICS.DAILY_CITY_METRICS')
 
 
 def merge_daily_city_metrics(session):
@@ -40,14 +39,13 @@ def merge_daily_city_metrics(session):
 
     print("{} records in stream".format(session.table('HARMONIZED.ORDERS_STREAM').count()))
     orders_stream_dates = session.table('HARMONIZED.ORDERS_STREAM').select(F.col("ORDER_TS_DATE").alias("DATE")).distinct()
-    orders_stream_dates.limit(5).show()
+    #orders_stream_dates.limit(5).show()
 
     orders = session.table("HARMONIZED.ORDERS_STREAM").group_by(F.col('ORDER_TS_DATE'), F.col('PRIMARY_CITY'), F.col('COUNTRY')) \
                                         .agg(F.sum(F.col("PRICE")).as_("price_nulls")) \
                                         .with_column("DAILY_SALES", F.call_builtin("ZEROIFNULL", F.col("price_nulls"))) \
                                         .select(F.col('ORDER_TS_DATE').alias("DATE"), F.col("PRIMARY_CITY").alias("CITY_NAME"), \
                                         F.col("COUNTRY").alias("COUNTRY_DESC"), F.col("DAILY_SALES"))
-#    orders.limit(5).show()
 
     weather_pc = session.table("FROSTBYTE_WEATHERSOURCE.ONPOINT_ID.POSTAL_CODES")
     countries = session.table("RAW_POS.COUNTRY")
