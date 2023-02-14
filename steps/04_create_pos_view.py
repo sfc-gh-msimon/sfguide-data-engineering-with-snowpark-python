@@ -5,25 +5,16 @@
 # Last Updated: 1/9/2023
 #------------------------------------------------------------------------------
 
-# SNOWFLAKE ADVANTAGE: Snowpark DataFrame API
-# SNOWFLAKE ADVANTAGE: Streams for incremental processing (CDC)
-# SNOWFLAKE ADVANTAGE: Streams on views
+# SNOWFLAKE ADVANTAGE: Snowpark DataFrame API -- Streams for incremental processing (CDC) -- Streams on views
 
-
-from snowflake.snowpark import Session
-#import snowflake.snowpark.types as T
 import snowflake.snowpark.functions as F
-
 
 def create_pos_view(session):
     session.use_schema('HARMONIZED')
-    order_detail = session.table("RAW_POS.ORDER_DETAIL").select(F.col("ORDER_DETAIL_ID"), \
-                                                                F.col("LINE_NUMBER"), \
-                                                                F.col("MENU_ITEM_ID"), \
-                                                                F.col("QUANTITY"), \
-                                                                F.col("UNIT_PRICE"), \
-                                                                F.col("PRICE"), \
-                                                                F.col("ORDER_ID"))
+    truck = session.table("RAW_POS.TRUCK")
+    menu = session.table("RAW_POS.MENU")
+    location = session.table("RAW_POS.LOCATION")
+    order_detail = session.table("RAW_POS.ORDER_DETAIL")
     order_header = session.table("RAW_POS.ORDER_HEADER").select(F.col("ORDER_ID"), \
                                                                 F.col("TRUCK_ID"), \
                                                                 F.col("ORDER_TS"), \
@@ -33,32 +24,10 @@ def create_pos_view(session):
                                                                 F.col("ORDER_DISCOUNT_AMOUNT"), \
                                                                 F.col("LOCATION_ID"), \
                                                                 F.col("ORDER_TOTAL"))
-    truck = session.table("RAW_POS.TRUCK").select(F.col("TRUCK_ID"), \
-                                                F.col("PRIMARY_CITY"), \
-                                                F.col("REGION"), \
-                                                F.col("COUNTRY"), \
-                                                F.col("FRANCHISE_FLAG"), \
-                                                F.col("FRANCHISE_ID"))
-    menu = session.table("RAW_POS.MENU").select(F.col("MENU_ITEM_ID"), \
-                                                F.col("TRUCK_BRAND_NAME"), \
-                                                F.col("MENU_TYPE"), \
-                                                F.col("MENU_ITEM_NAME"))
     franchise = session.table("RAW_POS.FRANCHISE").select(F.col("FRANCHISE_ID"), \
-                                                        F.col("FIRST_NAME").alias("FRANCHISEE_FIRST_NAME"), \
-                                                        F.col("LAST_NAME").alias("FRANCHISEE_LAST_NAME"))
-    location = session.table("RAW_POS.LOCATION").select(F.col("LOCATION_ID"))
+                                                          F.col("FIRST_NAME").alias("FRANCHISEE_FIRST_NAME"), \
+                                                          F.col("LAST_NAME").alias("FRANCHISEE_LAST_NAME"))
 
-    
-    '''
-    We can do this one of two ways: either select before the join so it is more explicit, or just join on the full tables.
-    The end result is the same, it's mostly a readibility question.
-    '''
-    # order_detail = session.table("RAW_POS.ORDER_DETAIL")
-    # order_header = session.table("RAW_POS.ORDER_HEADER")
-    # truck = session.table("RAW_POS.TRUCK")
-    # menu = session.table("RAW_POS.MENU")
-    # franchise = session.table("RAW_POS.FRANCHISE")
-    # location = session.table("RAW_POS.LOCATION")
 
     t_with_f = truck.join(franchise, truck['FRANCHISE_ID'] == franchise['FRANCHISE_ID'], rsuffix='_f')
     oh_w_t_and_l = order_header.join(t_with_f, order_header['TRUCK_ID'] == t_with_f['TRUCK_ID'], rsuffix='_t') \

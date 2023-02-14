@@ -5,12 +5,6 @@
 # Last Updated: 1/9/2023
 #------------------------------------------------------------------------------
 
-import time
-from snowflake.snowpark import Session
-#import snowflake.snowpark.types as T
-#import snowflake.snowpark.functions as F
-
-
 POS_TABLES = ['country', 'franchise', 'location', 'menu', 'truck', 'order_header', 'order_detail']
 CUSTOMER_TABLES = ['customer_loyalty']
 TABLE_DICT = {
@@ -18,9 +12,7 @@ TABLE_DICT = {
     "customer": {"schema": "RAW_CUSTOMER", "tables": CUSTOMER_TABLES}
 }
 
-# SNOWFLAKE ADVANTAGE: Schema detection
-# SNOWFLAKE ADVANTAGE: Data ingestion with COPY
-# SNOWFLAKE ADVANTAGE: Snowflake Tables (not file-based)
+# SNOWFLAKE ADVANTAGE: Schema detection -- Data ingestion with COPY -- Snowflake Tables (not file-based)
 
 def load_raw_table(session, tname=None, s3dir=None, year=None, schema=None):
     session.use_schema(schema)
@@ -44,8 +36,7 @@ def load_all_raw_tables(session):
         schema = data['schema']
         for tname in tnames:
             print("Loading {}".format(tname))
-            # Only load the first 3 years of data for the order tables at this point
-            # We will load the 2022 data later in the lab
+            # Only load the first 3 years of data for the order tables at this point. We will load the 2022 data later in the lab
             if tname in ['order_header', 'order_detail']:
                 for year in ['2019', '2020', '2021']:
                     load_raw_table(session, tname=tname, s3dir=s3dir, year=year, schema=schema)
@@ -75,6 +66,6 @@ if __name__ == "__main__":
     session = snowpark_utils.get_snowpark_session()
 
     load_all_raw_tables(session)
-    validate_raw_tables(session)
+    #validate_raw_tables(session)
 
     session.close()
