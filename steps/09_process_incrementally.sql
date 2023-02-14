@@ -5,18 +5,17 @@ Author:       Jeremiah Hansen
 Last Updated: 1/9/2023
 -----------------------------------------------------------------------------*/
 
-USE ROLE RETAIL;
-USE WAREHOUSE HOL_WH;
-USE DATABASE RETAIL;
 
 
 -- ----------------------------------------------------------------------------
 -- Step #1: Add new/remaining order data
 -- ----------------------------------------------------------------------------
 
-USE SCHEMA RAW_POS;
+USE ROLE RETAIL;
+USE WAREHOUSE HOL_WH;
+USE RETAIL.RAW_POS;
 
-ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE;
+ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XLARGE wait_for_completion=true;
 COPY INTO ORDER_HEADER
 FROM @external.frostbyte_raw_stage/pos/order_header/year=2022
 FILE_FORMAT = (FORMAT_NAME = EXTERNAL.PARQUET_FORMAT)
@@ -30,7 +29,7 @@ MATCH_BY_COLUMN_NAME = CASE_SENSITIVE;
 ALTER WAREHOUSE HOL_WH SET WAREHOUSE_SIZE = XSMALL;
 
 -- See how many new records are in the stream
-SELECT COUNT(*) FROM HARMONIZED.POS_FLATTENED_V_STREAM;
+--SELECT COUNT(*) FROM HARMONIZED.POS_FLATTENED_V_STREAM;
 
 -- ----------------------------------------------------------------------------
 -- Step #2: Execute the tasks
@@ -45,7 +44,7 @@ EXECUTE TASK ORDERS_UPDATE_TASK;
 -- ----------------------------------------------------------------------------
 -- https://docs.snowflake.com/en/user-guide/ui-snowsight-tasks.html
 
--- manual queries to get at the same details
+-- manual queries to get task details
 SHOW TASKS;
 
 -- Task execution history in the past day
